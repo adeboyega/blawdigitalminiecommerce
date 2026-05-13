@@ -1,8 +1,11 @@
 "use client";
 
-import { Search, ShoppingCart, User, Zap, ChevronDown } from "lucide-react";
+import { Search, ShoppingCart, User, Zap, ChevronDown, LogOut, Package } from "lucide-react";
 import { useCartStore } from "@/store/cartStore";
-import { useEffect } from "react";
+import { useEffect, useState, useRef } from "react";
+import { supabase } from "@/services/supabase";
+import type { User as SupaUser } from "@supabase/supabase-js";
+import AuthModal from "@/components/AuthModal";
 
 interface NavbarProps {
   onSearchChange: (value: string) => void;
@@ -12,20 +15,46 @@ interface NavbarProps {
 
 export default function Navbar({ onSearchChange, searchValue, categories = [] }: NavbarProps) {
   const { totalItems, openCart } = useCartStore();
+  const [user, setUser] = useState<SupaUser | null>(null);
+  const [showAuth, setShowAuth] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     useCartStore.persist.rehydrate();
+    supabase.auth.getSession().then(({ data: { session } }) => setUser(session?.user ?? null));
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
+      setUser(session?.user ?? null);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setShowDropdown(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
   return (
+    <>
+    {showAuth && (
+      <AuthModal
+        onClose={() => setShowAuth(false)}
+        onSuccess={() => setShowAuth(false)}
+      />
+    )}
     <header className="sticky top-0 z-40 w-full shadow-sm">
       {/* Tier 1 — utility bar */}
       <div className="bg-[#82C341]">
         <div className="mx-auto flex h-8 max-w-7xl items-center justify-between px-4 text-xs text-white sm:px-6 lg:px-8">
           <span className="hidden sm:block">
-            🚚 Free shipping on orders over $50
+            🚚 Free delivery on orders over ₦50,000
           </span>
-          <span className="block sm:hidden">Free shipping over $50</span>
+          <span className="block sm:hidden">Free delivery over ₦50,000</span>
           <div className="flex items-center gap-4">
             <button className="flex items-center gap-0.5 opacity-90 hover:opacity-100">
               NGN ₦ <ChevronDown className="h-3 w-3" />
@@ -34,8 +63,16 @@ export default function Navbar({ onSearchChange, searchValue, categories = [] }:
               EN <ChevronDown className="h-3 w-3" />
             </button>
             <span className="opacity-30">|</span>
-            <button className="opacity-90 hover:opacity-100">Sign In</button>
-            <button className="font-semibold hover:opacity-90">Register</button>
+            {user ? (
+              <span className="font-semibold truncate max-w-[120px]">
+                {user.email?.split("@")[0]}
+              </span>
+            ) : (
+              <>
+                <button onClick={() => setShowAuth(true)} className="opacity-90 hover:opacity-100">Sign In</button>
+                <button onClick={() => setShowAuth(true)} className="font-semibold hover:opacity-90">Register</button>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -73,12 +110,43 @@ export default function Navbar({ onSearchChange, searchValue, categories = [] }:
           {/* Icons */}
           <div className="flex shrink-0 items-center gap-2">
             {/* Profile circle */}
-            <button
-              aria-label="Account"
-              className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-zinc-200 text-zinc-600 transition hover:border-[#82C341] hover:text-[#82C341]"
-            >
-              <User className="h-5 w-5" />
-            </button>
+            <div className="relative" ref={dropdownRef}>
+              <button
+                aria-label="Account"
+                onClick={() => user ? setShowDropdown(d => !d) : setShowAuth(true)}
+                className={`flex h-10 w-10 items-center justify-center rounded-full border-2 transition ${
+                  user
+                    ? "border-[#82C341] bg-[#82C341]/10 text-[#82C341]"
+                    : "border-zinc-200 text-zinc-600 hover:border-[#82C341] hover:text-[#82C341]"
+                }`}
+              >
+                <User className="h-5 w-5" />
+              </button>
+              {showDropdown && user && (
+                <div className="absolute right-0 top-12 z-50 w-52 rounded-2xl border border-zinc-100 bg-white p-2 shadow-xl">
+                  <div className="px-3 py-2 text-xs text-zinc-500 border-b border-zinc-100 mb-1">
+                    <p className="font-semibold text-zinc-900 truncate">{user.email}</p>
+                    <p className="mt-0.5">Signed in</p>
+                  </div>
+                  <a
+                    href="/orders"
+                    onClick={() => setShowDropdown(false)}
+                    className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-zinc-700 transition hover:bg-zinc-100"
+                  >
+                    <Package className="h-3.5 w-3.5 text-[#82C341]" /> My Orders
+                  </a>
+                  <button
+                    onClick={async () => {
+                      await supabase.auth.signOut();
+                      setShowDropdown(false);
+                    }}
+                    className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-red-500 transition hover:bg-red-50"
+                  >
+                    <LogOut className="h-3.5 w-3.5" /> Sign Out
+                  </button>
+                </div>
+              )}
+            </div>
 
             {/* Cart FAB */}
             <button
@@ -118,5 +186,6 @@ export default function Navbar({ onSearchChange, searchValue, categories = [] }:
         </div>
       </div>
     </header>
+    </>
   );
 }

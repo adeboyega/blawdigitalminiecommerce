@@ -7,8 +7,10 @@ import { supabase, uploadProductImage } from "@/services/supabase";
 import {
   Zap, LogOut, Plus, Edit2, Trash2, X, Check,
   Search, Package, Tag, AlertCircle, ImageOff, Upload,
+  ShoppingBag, ChevronRight, ChevronDown as ChevronDownIcon, Clock,
 } from "lucide-react";
 import type { Product } from "@/types";
+import { fetchAllOrders, updateOrderStatus, type Order, type OrderStatus } from "@/services/orders";
 
 interface ProductForm {
   name: string;
@@ -28,6 +30,7 @@ const INPUT =
 
 export default function AdminDashboard() {
   const router = useRouter();
+  const [tab, setTab] = useState<"products" | "orders">("products");
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -37,6 +40,12 @@ export default function AdminDashboard() {
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState("");
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+
+  // Orders state
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [ordersLoading, setOrdersLoading] = useState(false);
+  const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
+  const [updatingOrder, setUpdatingOrder] = useState<string | null>(null);
 
   const loadProducts = useCallback(async () => {
     setLoading(true);
@@ -48,12 +57,27 @@ export default function AdminDashboard() {
     setLoading(false);
   }, []);
 
+  const loadOrders = useCallback(async () => {
+    setOrdersLoading(true);
+    const data = await fetchAllOrders();
+    setOrders(data);
+    setOrdersLoading(false);
+  }, []);
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session) { router.replace("/admin"); return; }
       loadProducts();
+      loadOrders();
     });
-  }, [router, loadProducts]);
+  }, [router, loadProducts, loadOrders]);
+
+  async function handleStatusUpdate(orderId: string, status: OrderStatus) {
+    setUpdatingOrder(orderId);
+    await updateOrderStatus(orderId, status);
+    setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status } : o));
+    setUpdatingOrder(null);
+  }
 
   async function handleLogout() {
     await supabase.auth.signOut();
@@ -184,6 +208,153 @@ export default function AdminDashboard() {
           />
         </div>
 
+        {/* Tabs */}
+        <div className="mb-6 flex gap-1 rounded-2xl border border-zinc-100 bg-white p-1 shadow-sm">
+          {([
+            { id: "products", label: "Products", Icon: Package },
+            { id: "orders", label: "Orders", Icon: ShoppingBag },
+          ] as const).map(({ id, label, Icon }) => (
+            <button
+              key={id}
+              onClick={() => setTab(id)}
+              className={`flex flex-1 items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-semibold transition ${
+                tab === id
+                  ? "bg-[#82C341] text-white shadow-md shadow-[#82C341]/30"
+                  : "text-zinc-500 hover:text-zinc-700"
+              }`}
+            >
+              <Icon className="h-4 w-4" /> {label}
+              {id === "orders" && orders.length > 0 && (
+                <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-black ${tab === "orders" ? "bg-white/30 text-white" : "bg-zinc-100 text-zinc-500"}`}>
+                  {orders.length}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+
+        {tab === "orders" && (
+          <div className="overflow-hidden rounded-2xl border border-zinc-100 bg-white shadow-sm">
+            {ordersLoading ? (
+              <div className="flex items-center justify-center py-20">
+                <div className="h-8 w-8 animate-spin rounded-full border-2 border-zinc-100 border-t-[#82C341]" />
+              </div>
+            ) : orders.length === 0 ? (
+              <div className="flex flex-col items-center justify-center gap-2 py-20 text-zinc-400">
+                <ShoppingBag className="h-10 w-10" />
+                <p className="text-sm font-medium">No orders yet</p>
+              </div>
+            ) : (
+              <div className="divide-y divide-zinc-50">
+                {orders.map((order) => {
+                  const isExpanded = expandedOrder === order.id;
+                  const statusColors: Record<OrderStatus, string> = {
+                    placed: "bg-zinc-100 text-zinc-600",
+                    confirmed: "bg-[#82C341]/10 text-[#5a9a2c]",
+                    out_for_delivery: "bg-blue-100 text-blue-700",
+                    delivered: "bg-emerald-100 text-emerald-700",
+                  };
+                  const nextStatus: Partial<Record<OrderStatus, OrderStatus>> = {
+                    placed: "confirmed",
+                    confirmed: "out_for_delivery",
+                    out_for_delivery: "delivered",
+                  };
+                  const nextLabel: Partial<Record<OrderStatus, string>> = {
+                    placed: "Confirm Order",
+                    confirmed: "Mark Out for Delivery",
+                    out_for_delivery: "Mark Delivered",
+                  };
+                  return (
+                    <div key={order.id} className="transition hover:bg-zinc-50/50">
+                      <div
+                        className="flex cursor-pointer items-center gap-3 px-5 py-4"
+                        onClick={() => setExpandedOrder(isExpanded ? null : order.id)}
+                      >
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-mono text-sm font-black text-zinc-900 uppercase">
+                              WZO-{order.id.slice(-8).toUpperCase()}
+                            </span>
+                            <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${statusColors[order.status]}`}>
+                              {order.status.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase())}
+                            </span>
+                          </div>
+                          <p className="mt-0.5 text-xs text-zinc-500">
+                            {order.name} · {order.city}, {order.state}
+                          </p>
+                          <p className="mt-0.5 flex items-center gap-1 text-[11px] text-zinc-400">
+                            <Clock className="h-3 w-3" />
+                            {new Date(order.placed_at).toLocaleString("en-NG", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                          </p>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <p className="text-sm font-black text-zinc-900">₦{order.subtotal.toLocaleString("en-NG")}</p>
+                          <p className="text-xs text-zinc-400">{order.items.length} item{order.items.length !== 1 ? "s" : ""}</p>
+                        </div>
+                        {isExpanded
+                          ? <ChevronDownIcon className="h-4 w-4 shrink-0 text-zinc-400" />
+                          : <ChevronRight className="h-4 w-4 shrink-0 text-zinc-400" />
+                        }
+                      </div>
+
+                      {isExpanded && (
+                        <div className="border-t border-zinc-50 px-5 pb-5 pt-3">
+                          {/* Contact & address */}
+                          <div className="mb-4 grid grid-cols-2 gap-x-6 gap-y-1.5 text-xs">
+                            <span className="text-zinc-400">Email</span><span className="font-medium text-zinc-700">{order.email}</span>
+                            <span className="text-zinc-400">Phone</span><span className="font-medium text-zinc-700">{order.phone}</span>
+                            <span className="text-zinc-400">Address</span><span className="font-medium text-zinc-700">{order.address}</span>
+                            <span className="text-zinc-400">Payment</span><span className="font-medium text-zinc-700 capitalize">{order.payment_method}</span>
+                            {order.payment_ref && <><span className="text-zinc-400">Ref</span><span className="font-mono text-zinc-700">{order.payment_ref}</span></>}
+                          </div>
+
+                          {/* Items */}
+                          <div className="mb-4 space-y-2">
+                            {order.items.map((item) => (
+                              <div key={item.id} className="flex items-center gap-3">
+                                <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-lg bg-zinc-100">
+                                  {item.image_url && (
+                                    <Image src={item.image_url} alt={item.name} fill sizes="36px" className="object-cover" />
+                                  )}
+                                </div>
+                                <span className="flex-1 truncate text-xs text-zinc-700">{item.name}</span>
+                                <span className="text-xs text-zinc-500">×{item.quantity}</span>
+                                <span className="text-xs font-bold text-zinc-900">₦{(item.price * item.quantity).toLocaleString("en-NG")}</span>
+                              </div>
+                            ))}
+                          </div>
+
+                          {/* Status update */}
+                          {nextStatus[order.status] && (
+                            <button
+                              onClick={() => handleStatusUpdate(order.id, nextStatus[order.status]!)}
+                              disabled={updatingOrder === order.id}
+                              className="flex items-center gap-2 rounded-xl bg-[#82C341] px-5 py-2.5 text-sm font-bold text-white shadow-md shadow-[#82C341]/30 transition hover:bg-[#6da832] disabled:opacity-60 active:scale-95"
+                            >
+                              {updatingOrder === order.id ? (
+                                <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                              ) : (
+                                <Check className="h-4 w-4" />
+                              )}
+                              {nextLabel[order.status]}
+                            </button>
+                          )}
+                          {order.status === "delivered" && (
+                            <span className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700">
+                              <Check className="h-4 w-4" /> Order Delivered
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {tab === "products" && <>
         {/* Toolbar */}
         <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="relative w-full max-w-xs">
@@ -317,6 +488,7 @@ export default function AdminDashboard() {
             </div>
           )}
         </div>
+        </>}
       </main>
 
       {/* Add / Edit Modal */}

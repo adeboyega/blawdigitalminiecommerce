@@ -3,11 +3,13 @@
 import Image from "next/image";
 import { X, Minus, Plus, Trash2, ShoppingBag, ImageOff } from "lucide-react";
 import { useCartStore } from "@/store/cartStore";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import CheckoutFlow from "@/components/CheckoutFlow";
 
 export default function CartDrawer() {
   const { items, isOpen, closeCart, updateQuantity, removeItem, subtotal, clearCart } =
     useCartStore();
+  const [showCheckout, setShowCheckout] = useState(false);
 
   useEffect(() => {
     useCartStore.persist.rehydrate();
@@ -23,6 +25,10 @@ export default function CartDrawer() {
 
   return (
     <>
+      {showCheckout && (
+        <CheckoutFlow onClose={() => setShowCheckout(false)} />
+      )}
+
       {/* Backdrop */}
       {isOpen && (
         <div
@@ -154,7 +160,10 @@ export default function CartDrawer() {
             <p className="text-xs text-zinc-400">
               Shipping &amp; taxes calculated at checkout
             </p>
-            <button className="w-full rounded-xl bg-[#82C341] py-3.5 text-sm font-bold text-white shadow-md shadow-[#82C341]/30 transition hover:bg-[#6da832] active:scale-[0.98]">
+            <button
+              onClick={() => { closeCart(); setShowCheckout(true); }}
+              className="w-full rounded-xl bg-[#82C341] py-3.5 text-sm font-bold text-white shadow-md shadow-[#82C341]/30 transition hover:bg-[#6da832] active:scale-[0.98]"
+            >
               Proceed to Checkout
             </button>
             <button
