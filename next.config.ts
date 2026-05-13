@@ -2,7 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   experimental: {
-    optimizePackageImports: ["lucide-react", "@supabase/supabase-js"],
+    optimizePackageImports: ["lucide-react", "@supabase/supabase-js", "framer-motion"],
   },
   images: {
     remotePatterns: [
