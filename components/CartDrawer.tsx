@@ -43,13 +43,13 @@ export default function CartDrawer() {
         role="dialog"
         aria-label="Shopping cart"
         aria-modal="true"
-        className={`fixed right-0 top-0 z-50 flex h-full w-full max-w-md flex-col bg-white shadow-2xl transition-transform duration-300 ${
+        className={`fixed right-0 top-0 z-50 flex h-full w-full max-w-md flex-col bg-white dark:bg-zinc-900 shadow-2xl transition-transform duration-300 ${
           isOpen ? "translate-x-0" : "translate-x-full"
         }`}
       >
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-zinc-100 px-6 py-4">
-          <h2 className="flex items-center gap-2 text-lg font-semibold text-zinc-900">
+        <div className="flex items-center justify-between border-b border-zinc-100 dark:border-zinc-800 px-6 py-4">
+          <h2 className="flex items-center gap-2 text-lg font-semibold text-zinc-900 dark:text-zinc-100">
             <ShoppingBag className="h-5 w-5 text-[#82C341]" />
             Your Cart
             {items.length > 0 && (
@@ -80,7 +80,7 @@ export default function CartDrawer() {
               {items.map(({ product, quantity }) => (
                 <li
                   key={product.id}
-                  className="flex gap-4 rounded-xl border border-zinc-100 p-3"
+                  className="flex gap-4 rounded-xl border border-zinc-100 dark:border-zinc-700 p-3"
                 >
                   {/* Thumbnail */}
                   <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-lg bg-zinc-100">
@@ -150,7 +150,7 @@ export default function CartDrawer() {
 
         {/* Footer */}
         {items.length > 0 && (
-          <div className="border-t border-zinc-100 px-6 py-5 space-y-4">
+          <div className="border-t border-zinc-100 dark:border-zinc-800 px-6 py-5 space-y-4">
             <div className="flex items-center justify-between text-sm">
               <span className="text-zinc-500">Subtotal</span>
               <span className="text-xl font-bold text-zinc-900">

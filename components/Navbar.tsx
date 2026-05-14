@@ -1,11 +1,13 @@
 "use client";
 
-import { Search, ShoppingCart, User, Zap, ChevronDown, LogOut, Package } from "lucide-react";
+import { Search, ShoppingCart, User, Zap, ChevronDown, LogOut, Package, Heart, Sun, Moon } from "lucide-react";
 import { useCartStore } from "@/store/cartStore";
 import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/services/supabase";
 import type { User as SupaUser } from "@supabase/supabase-js";
 import AuthModal from "@/components/AuthModal";
+import { useThemeStore } from "@/store/themeStore";
+import { useWishlistStore } from "@/store/wishlistStore";
 
 interface NavbarProps {
   onSearchChange: (value: string) => void;
@@ -15,6 +17,8 @@ interface NavbarProps {
 
 export default function Navbar({ onSearchChange, searchValue, categories = [] }: NavbarProps) {
   const { totalItems, openCart } = useCartStore();
+  const { theme, toggle: toggleTheme } = useThemeStore();
+  const wishlistCount = useWishlistStore((s) => s.count);
   const [user, setUser] = useState<SupaUser | null>(null);
   const [showAuth, setShowAuth] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
@@ -22,6 +26,7 @@ export default function Navbar({ onSearchChange, searchValue, categories = [] }:
 
   useEffect(() => {
     useCartStore.persist.rehydrate();
+    useWishlistStore.persist.rehydrate();
     supabase.auth.getSession().then(({ data: { session } }) => setUser(session?.user ?? null));
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
       setUser(session?.user ?? null);
@@ -78,14 +83,14 @@ export default function Navbar({ onSearchChange, searchValue, categories = [] }:
       </div>
 
       {/* Tier 2 — main bar */}
-      <div className="bg-white">
+      <div className="bg-white dark:bg-zinc-900 border-b border-zinc-100 dark:border-zinc-800">
         <div className="mx-auto flex h-16 max-w-7xl items-center gap-4 px-4 sm:px-6 lg:px-8">
           {/* Logo */}
           <a href="/" className="flex shrink-0 items-center gap-2">
             <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#82C341]">
               <Zap className="h-5 w-5 text-white" />
             </div>
-            <span className="text-xl font-black tracking-tight text-zinc-900">
+            <span className="text-xl font-black tracking-tight text-zinc-900 dark:text-white">
               Whazz<span className="text-[#82C341]">online</span>
             </span>
           </a>
@@ -97,7 +102,7 @@ export default function Navbar({ onSearchChange, searchValue, categories = [] }:
               placeholder="Search for products, brands and more…"
               value={searchValue}
               onChange={(e) => onSearchChange(e.target.value)}
-              className="h-11 w-full rounded-full border-2 border-zinc-200 bg-zinc-50 pl-5 pr-14 text-sm text-zinc-900 placeholder:text-zinc-400 outline-none transition focus:border-[#82C341] focus:bg-white focus:ring-4 focus:ring-[#82C341]/10"
+              className="h-11 w-full rounded-full border-2 border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 pl-5 pr-14 text-sm text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 outline-none transition focus:border-[#82C341] focus:bg-white dark:focus:bg-zinc-700 focus:ring-4 focus:ring-[#82C341]/10"
             />
             <button
               aria-label="Search"
@@ -109,6 +114,29 @@ export default function Navbar({ onSearchChange, searchValue, categories = [] }:
 
           {/* Icons */}
           <div className="flex shrink-0 items-center gap-2">
+            {/* Dark mode toggle */}
+            <button
+              onClick={toggleTheme}
+              aria-label="Toggle dark mode"
+              className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-300 transition hover:border-[#82C341] hover:text-[#82C341]"
+            >
+              {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+            </button>
+
+            {/* Wishlist */}
+            <a
+              href="/wishlist"
+              aria-label="Wishlist"
+              className="relative flex h-10 w-10 items-center justify-center rounded-full border-2 border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-300 transition hover:border-red-400 hover:text-red-500"
+            >
+              <Heart className="h-5 w-5" />
+              {wishlistCount() > 0 && (
+                <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-black text-white">
+                  {wishlistCount() > 99 ? "99+" : wishlistCount()}
+                </span>
+              )}
+            </a>
+
             {/* Profile circle */}
             <div className="relative" ref={dropdownRef}>
               <button
@@ -123,15 +151,15 @@ export default function Navbar({ onSearchChange, searchValue, categories = [] }:
                 <User className="h-5 w-5" />
               </button>
               {showDropdown && user && (
-                <div className="absolute right-0 top-12 z-50 w-52 rounded-2xl border border-zinc-100 bg-white p-2 shadow-xl">
-                  <div className="px-3 py-2 text-xs text-zinc-500 border-b border-zinc-100 mb-1">
-                    <p className="font-semibold text-zinc-900 truncate">{user.email}</p>
+                <div className="absolute right-0 top-12 z-50 w-52 rounded-2xl border border-zinc-100 dark:border-zinc-700 bg-white dark:bg-zinc-800 p-2 shadow-xl">
+                  <div className="px-3 py-2 text-xs text-zinc-500 dark:text-zinc-400 border-b border-zinc-100 dark:border-zinc-700 mb-1">
+                    <p className="font-semibold text-zinc-900 dark:text-zinc-100 truncate">{user.email}</p>
                     <p className="mt-0.5">Signed in</p>
                   </div>
                   <a
                     href="/orders"
                     onClick={() => setShowDropdown(false)}
-                    className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-zinc-700 transition hover:bg-zinc-100"
+                    className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-zinc-700 dark:text-zinc-300 transition hover:bg-zinc-100 dark:hover:bg-zinc-700"
                   >
                     <Package className="h-3.5 w-3.5 text-[#82C341]" /> My Orders
                   </a>
@@ -140,7 +168,7 @@ export default function Navbar({ onSearchChange, searchValue, categories = [] }:
                       await supabase.auth.signOut();
                       setShowDropdown(false);
                     }}
-                    className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-red-500 transition hover:bg-red-50"
+                    className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-red-500 transition hover:bg-red-50 dark:hover:bg-red-950/30"
                   >
                     <LogOut className="h-3.5 w-3.5" /> Sign Out
                   </button>
@@ -166,16 +194,16 @@ export default function Navbar({ onSearchChange, searchValue, categories = [] }:
       </div>
 
       {/* Tier 3 — nav strip */}
-      <div className="border-t border-zinc-100 bg-white">
+      <div className="border-t border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-900">
         <div className="mx-auto flex h-10 max-w-7xl items-center gap-1 overflow-x-auto px-4 sm:px-6 lg:px-8">
-          <button className="flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold text-zinc-700 transition hover:bg-[#82C341]/10 hover:text-[#82C341]">
+          <button className="flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold text-zinc-700 dark:text-zinc-300 transition hover:bg-[#82C341]/10 hover:text-[#82C341]">
             All Categories
           </button>
-          <span className="text-zinc-200">|</span>
+          <span className="text-zinc-200 dark:text-zinc-700">|</span>
           {categories.map((cat) => (
             <button
               key={cat}
-              className="shrink-0 rounded-full px-3 py-1 text-xs font-medium text-zinc-500 transition hover:bg-[#82C341]/10 hover:text-[#82C341]"
+              className="shrink-0 rounded-full px-3 py-1 text-xs font-medium text-zinc-500 dark:text-zinc-400 transition hover:bg-[#82C341]/10 hover:text-[#82C341]"
             >
               {cat}
             </button>
