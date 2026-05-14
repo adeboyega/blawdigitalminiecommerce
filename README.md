@@ -89,11 +89,10 @@ npm install
 Create a `.env.local` file in the project root:
 
 ```env
-NEXT_PUBLIC_SUPABASE_URL=https://your-project-ref.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key-here
+NEXT_PUBLIC_SUPABASE_URL=https://project-ref.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=anon-key-here
 ```
 
-Both values are found in your Supabase project under **Settings → API**. The anon key is a JWT (~200+ characters) — not the short project reference ID.
 
 ### Supabase Database Setup
 
