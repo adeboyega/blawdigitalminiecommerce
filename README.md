@@ -140,13 +140,9 @@ create table if not exists orders (
   delivered_at timestamptz,
   created_at timestamptz default now()
 );
-alter table orders enable row level security;
-create policy "Anyone can insert orders" on orders for insert with check (true);
-create policy "Anyone can read orders" on orders for select using (true);
-create policy "Service role can update orders" on orders for update using (true);
+
 ```
 
-Also create a **Supabase Storage bucket** named `product-images` (public) for admin image uploads.
 
 ### Run Locally
 
