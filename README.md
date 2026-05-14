@@ -2,7 +2,7 @@
 
 A fully functional e-commerce web application built for the Blawdigital Lead Developer Assessment. Whazzonline connects vendors and buyers with a clean, performant shopping experience built on modern full-stack tooling.
 
-**Live URL:** _[Add your Vercel deployment URL here]_
+**Live URL:** https://blawdigitalminiecommerce.vercel.app/
 
 ---
 
