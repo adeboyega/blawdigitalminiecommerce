@@ -2,7 +2,7 @@
 
 A fully functional e-commerce web application built for the Blawdigital Lead Developer Assessment. Whazzonline connects vendors and buyers with a clean, performant shopping experience built on modern full-stack tooling.
 
-**Live URL:** _[Add your Vercel deployment URL here]_
+**Live URL:** https://blawdigitalminiecommerce.vercel.app/
 
 ---
 
@@ -89,11 +89,10 @@ npm install
 Create a `.env.local` file in the project root:
 
 ```env
-NEXT_PUBLIC_SUPABASE_URL=https://your-project-ref.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key-here
+NEXT_PUBLIC_SUPABASE_URL=https://project-ref.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=anon-key-here
 ```
 
-Both values are found in your Supabase project under **Settings → API**. The anon key is a JWT (~200+ characters) — not the short project reference ID.
 
 ### Supabase Database Setup
 
@@ -140,13 +139,9 @@ create table if not exists orders (
   delivered_at timestamptz,
   created_at timestamptz default now()
 );
-alter table orders enable row level security;
-create policy "Anyone can insert orders" on orders for insert with check (true);
-create policy "Anyone can read orders" on orders for select using (true);
-create policy "Service role can update orders" on orders for update using (true);
+
 ```
 
-Also create a **Supabase Storage bucket** named `product-images` (public) for admin image uploads.
 
 ### Run Locally
 
