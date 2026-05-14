@@ -50,7 +50,13 @@ export default function AuthModal({ onClose, onSuccess }: { onClose: () => void;
     if (suPw.length < 6) { setError("Password must be at least 6 characters."); return; }
     setLoading(true); setError("");
 
-    const { data, error } = await supabase.auth.signUp({ email: suEmail, password: suPw });
+    const { data, error } = await supabase.auth.signUp({
+      email: suEmail,
+      password: suPw,
+      options: {
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
+      },
+    });
     if (error) { setError(error.message); setLoading(false); return; }
 
     if (data.user) {
