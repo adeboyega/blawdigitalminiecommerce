@@ -70,6 +70,41 @@ types/
 
 ---
 
+## Testing
+
+The project ships with a Jest + React Testing Library suite covering the core business logic and UI components.
+
+### Run the tests
+
+```bash
+npm test                 # run all tests
+npm run test:coverage    # run with coverage report
+```
+
+### Coverage summary
+
+| Area | Files | Result |
+|---|---|---|
+| Stores | `cartStore`, `wishlistStore`, `themeStore` | ~99% statements |
+| Services | `orders.ts` | 100% statements |
+| Components | `SearchModal`, `CartDrawer`, `ProductCard`, `ThemeProvider` | ~95% statements |
+| **Overall** | **8 suites · 81 tests** | **96% statements** |
+
+Coverage threshold enforced in `jest.config.js`: **70% lines, functions, and branches**.
+
+### What is covered
+
+- **`cartStore`** — addItem (new product + duplicate increment), removeItem, updateQuantity (set, zero, negative), clearCart, openCart/closeCart, totalItems, subtotal
+- **`wishlistStore`** — add, remove, toggle (add when absent / remove when present), has, count
+- **`themeStore`** — initial state, toggle light → dark, toggle dark → light, multiple toggles
+- **`orders.ts`** — fetchOrder (found/null), fetchAllOrders (data/empty fallback), createOrder (success/error), updateOrderStatus for all four statuses with correct timestamp fields, getProfile, upsertProfile
+- **`ThemeProvider`** — renders children, adds/removes `dark` class on `<html>`
+- **`SearchModal`** — renders when open, hidden when closed, empty-state prompt, filter by name, filter by category, no-results message, result count, out-of-stock label, click navigates and closes, backdrop click closes, Escape key closes
+- **`ProductCard`** — renders name/price/category/description, out-of-stock overlay + disabled button, add-to-cart calls store, wishlist toggle label + handler
+- **`CartDrawer`** — empty state, item rendering, subtotal display, remove/increase/decrease/clear actions, checkout flow trigger, close button
+
+---
+
 ## Local Setup
 
 ### Prerequisites
@@ -184,4 +219,4 @@ Visit [http://localhost:3000](http://localhost:3000). Admin panel is at `/admin`
 4. **Optimistic UI updates** — cart and wishlist feel instant already via Zustand, but order status updates in admin could use optimistic state
 5. **Product reviews** — `reviews` table with star ratings, linked to `orders` to prevent fake reviews
 6. **Vendor dashboard** — multi-tenancy layer so vendors manage their own products, matching Whazzonline's vendor-buyer model
-7. **End-to-end tests** — Playwright covering the checkout flow, auth, and order tracking golden paths
+7. **End-to-end tests** — Playwright covering the checkout flow, auth, and order tracking golden paths (unit tests are in place; E2E is the natural next layer)
